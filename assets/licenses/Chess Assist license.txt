@@ -1,6 +1,6 @@
 /*!
- * Chess Assist (https://chessassist.net)
- * Copyright (c) ENDGAME SOFTWARE, LLC. All rights reserved.
+ * Chess Assist
+ * Copyright (c) Banerus Software, LLC. All rights reserved.
  */
 
 "software" referring to Chess Assist
