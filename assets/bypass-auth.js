@@ -42,7 +42,9 @@
 
     for (const node of bodyChildren) {
       if (!(node instanceof HTMLElement)) continue;
-      if (hasAuthMarkers(node) || (looksLikePopup(node) && hasAuthMarkers(document.body))) {
+      const hasMarkers = hasAuthMarkers(node);
+      const popupLike = looksLikePopup(node);
+      if ((hasMarkers && popupLike) || (popupLike && hasAuthMarkers(document.body))) {
         node.remove();
       }
     }
