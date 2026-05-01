@@ -1,63 +1,59 @@
 (function () {
-  const AUTH_TEXT = [/register/i, /login/i, /already have an account/i, /not a member/i];
-  const AUTH_PLACEHOLDER = [/username/i, /password/i, /confirm/i];
+  const AUTH_TEXT = ["register", "login", "already have an account", "not a member"];
+  const AUTH_PLACEHOLDER = ["username", "password", "confirm"];
 
-  function hasAuthMarkers(root) {
-    if (!(root instanceof HTMLElement)) return false;
-
-    const text = (root.textContent || "").trim();
-    if (AUTH_TEXT.some((re) => re.test(text))) return true;
-
-    const fields = root.querySelectorAll("input");
-    let authFieldCount = 0;
-    for (const field of fields) {
-      const placeholder = (field.getAttribute("placeholder") || "").trim();
-      if (AUTH_PLACEHOLDER.some((re) => re.test(placeholder))) authFieldCount += 1;
-    }
-
-    return authFieldCount >= 2;
+  function normalized(value) {
+    return String(value || "").trim().toLowerCase();
   }
 
-  function looksLikePopup(el) {
-    if (!(el instanceof HTMLElement)) return false;
-    const style = window.getComputedStyle(el);
-    if (!style) return false;
+  function hasAuthText(node) {
+    const text = normalized(node.textContent);
+    return AUTH_TEXT.some((marker) => text.includes(marker));
+  }
 
-    const isOverlayPosition = style.position === "fixed" || style.position === "absolute";
-    const z = Number.parseInt(style.zIndex || "0", 10);
-    const rect = el.getBoundingClientRect();
+  function hasAuthInput(node) {
+    const inputs = node.querySelectorAll("input");
+    let matches = 0;
 
-    return (
-      isOverlayPosition &&
-      z >= 1000 &&
-      rect.width >= 150 &&
-      rect.width <= 420 &&
-      rect.height >= 120 &&
-      rect.height <= 520
-    );
+    for (const input of inputs) {
+      const placeholder = normalized(input.getAttribute("placeholder"));
+      if (AUTH_PLACEHOLDER.some((marker) => placeholder.includes(marker))) matches += 1;
+    }
+
+    return matches >= 2;
+  }
+
+  function hideElement(el) {
+    el.style.setProperty("display", "none", "important");
+    el.style.setProperty("pointer-events", "none", "important");
+    el.style.setProperty("visibility", "hidden", "important");
   }
 
   function bypassAuthUI() {
-    const bodyChildren = Array.from(document.body.children || []);
+    if (!document.body) return;
 
-    for (const node of bodyChildren) {
-      if (!(node instanceof HTMLElement)) continue;
-      const hasMarkers = hasAuthMarkers(node);
-      const popupLike = looksLikePopup(node);
-      if ((hasMarkers && popupLike) || (popupLike && hasAuthMarkers(document.body))) {
-        node.remove();
+    const popupCandidates = Array.from(document.body.children).filter((el) => el instanceof HTMLElement);
+
+    for (const el of popupCandidates) {
+      const style = window.getComputedStyle(el);
+      const isPopupPosition = style.position === "fixed" || style.position === "absolute";
+      const zIndex = Number.parseInt(style.zIndex || "0", 10);
+      if (!isPopupPosition || zIndex < 500) continue;
+
+      if (hasAuthText(el) || hasAuthInput(el)) {
+        hideElement(el);
       }
     }
 
-    document.body.style.filter = "none";
     document.body.style.pointerEvents = "auto";
     document.body.style.overflow = "auto";
+    document.body.style.filter = "none";
   }
 
-  const observer = new MutationObserver(bypassAuthUI);
+  const observer = new MutationObserver(() => bypassAuthUI());
   observer.observe(document.documentElement, { childList: true, subtree: true });
 
   window.addEventListener("load", bypassAuthUI);
-  setTimeout(bypassAuthUI, 300);
-  setTimeout(bypassAuthUI, 1000);
+  setTimeout(bypassAuthUI, 250);
+  setTimeout(bypassAuthUI, 800);
 })();
